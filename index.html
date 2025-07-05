@@ -134,7 +134,7 @@
         border-radius: 6px;
         color: #ffffff;
         font-weight: 500;
-        transition: background-color 0.2s;
+        transition: background fistula-color 0.2s;
         cursor: pointer;
         border: none;
       }
@@ -424,11 +424,26 @@
               <th>Rack Number</th>
               <th>Rack In Time</th>
               <th>Rack Out Time</th>
+              <th>LPG Gas (kg)</th>
             </tr>
           </thead>
           <tbody id="scheduleBody">
             <!-- Dynamically generated rows -->
           </tbody>
+          <tfoot>
+            <tr class="bg-gray-50">
+              <td class="border px-4 py-3 text-sm font-medium text-gray-600" colspan="4">
+                Total LPG Gas Requirement
+              </td>
+              <td class="border px-4 py-3 text-center" id="totalLpg"></td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="border px-4 py-3 text-sm font-medium text-gray-600" colspan="4">
+                Number of LPG Bottles (450 kg each)
+              </td>
+              <td class="border px-4 py-3 text-center" id="numBottles"></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
       <hr class="my-6" />
@@ -592,6 +607,8 @@
         } catch (error) {
           showError("Error performing calculation");
           console.error(error);
+
+
         }
       }
 
@@ -602,12 +619,17 @@
 
           const rackIn1 = document.getElementById("rackIn1")?.value || "06:00";
           let [hours, minutes] = rackIn1.split(":").map(Number);
-          let currentTime = new Date("2025-07-04");
+          let currentTime = new Date();
           currentTime.setHours(hours, minutes, 0, 0);
-          let currentDate = new Date("2025-07-04");
+          let currentDate = new Date();
           let rackCount = 1;
           let racksToday = 0;
           let dayIndex = 0;
+          let totalLpg = 0;
+
+          // LPG gas calculation: 14.28571429 kg per 60 minutes
+          const lpgPerMinute = 14.28571429 / 60;
+          const duration = 150; // Duration per rack in minutes
 
           const dateOptions = {
             month: "numeric",
@@ -630,12 +652,13 @@
               currentTime.setHours(hours, minutes, 0, 0);
             }
 
-            const row = document.createElement("tr");
-            const duration = 150;
             const rackOutTime = new Date(
               currentTime.getTime() + duration * 60000
             );
+            const lpgForRack = (lpgPerMinute * duration).toFixed(2);
+            totalLpg += parseFloat(lpgForRack);
 
+            const row = document.createElement("tr");
             row.innerHTML = `
               <td class="day-bg-${dayIndex}">${currentDate.toLocaleDateString(
               "en-US",
@@ -656,6 +679,7 @@
               "en-US",
               timeOptions
             )}</td>
+              <td>${lpgForRack}</td>
             `;
             scheduleBody.appendChild(row);
 
@@ -664,9 +688,13 @@
             racksToday++;
           }
 
-          document.getElementById("today").textContent = new Date(
-            "2025-07-04"
-          ).toLocaleDateString("en-US", dateOptions);
+          // Update total LPG and number of bottles
+          document.getElementById("totalLpg").textContent = totalLpg.toFixed(2);
+          document.getElementById("numBottles").textContent = Math.ceil(
+            totalLpg / 450
+          );
+
+          document.getElementById("today").textContent = new Date().toLocaleDateString("en-US", dateOptions);
         } catch (error) {
           showError("Error updating schedule");
           console.error(error);
@@ -696,9 +724,7 @@
 
       // Initialize
       try {
-        document.getElementById("today").textContent = new Date(
-          "2025-07-04"
-        ).toLocaleDateString("en-US");
+        document.getElementById("today").textContent = new Date().toLocaleDateString("en-US");
         validateAndCalculate();
       } catch (error) {
         showError("Error initializing application");
